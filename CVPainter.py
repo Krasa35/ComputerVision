@@ -9,18 +9,25 @@ myList = os.listdir(folderPath)
 #print(myList)
 overlayList = []
 
+cap = cv2.VideoCapture(0)
+# cap.set(3, 1280)
+# cap.set(4, 720)
+cap_width = int(cap.get(3))
+cap_height = int(cap.get(4))
 for imPath in myList:
     image = cv2.imread(f'{folderPath}/{imPath}')
-    overlayList.append(image)
+    if image is not None:
+        image = cv2.resize(image, (cap_width, int(cap_height/5)))
+        overlayList.append(image)
+    else:
+        print(f"Warning: Unable to load image {imPath}")
 #print(len(overlayList))
 
 header = overlayList[0]
-cap = cv2.VideoCapture(0)
-cap.set(3, 1280)
-cap.set(4, 720)
+
 
 detector = htm.handDetector(maxHands=1, detectionCon=0.7, trackCon=0.6)
-imgCanvas = np.zeros((720, 1280, 3), np.uint8)
+imgCanvas = np.zeros((cap_height, cap_width, 3), np.uint8)
 xp, yp = 0, 0
 #############################
 drawColor = (255, 0, 255)
@@ -52,17 +59,17 @@ while True:
             #selection mode
             xp, yp = 0, 0
             cv2.rectangle(img, (x1, y1-25), (x2, y2+25), drawColor, cv2.FILLED)
-            if y1 < 125:
-                if 250 < x1 < 450:
+            if y1 < int(cap_height/5):
+                if int(cap_width/5) < x1 < int(cap_width*2/5):
                     header = overlayList[0]
                     drawColor = (255, 0, 255)
-                elif 550 < x1 < 750:
+                elif int(cap_width*2/5) < x1 < int(cap_width*3/5):
                     header = overlayList[1]
                     drawColor = (255, 0, 0)
-                elif 800 < x1 < 950:
+                elif int(cap_width*3/5) < x1 < int(cap_width*4/5):
                     header = overlayList[2]
                     drawColor = (0, 255, 0)
-                elif 1050 < x1 < 1200:
+                elif int(cap_width*4/5) < x1 < int(cap_width):
                     header = overlayList[3]
                     drawColor = (0, 0, 0)
 
@@ -84,11 +91,13 @@ while True:
     imgGray = cv2.cvtColor(imgCanvas, cv2.COLOR_BGR2GRAY)
     _, imgInv = cv2.threshold(imgGray, 50, 255, cv2.THRESH_BINARY_INV)
     imgInv = cv2.cvtColor(imgInv, cv2.COLOR_GRAY2BGR)
+    print(img.shape)
+    print(imgInv.shape)
     img = cv2.bitwise_and(img, imgInv)              #DODAJE bity kolorow do siebie
     img = cv2.bitwise_or(img, imgCanvas)            #z racji ze rysuje czarny to miejsce zamienia na taki kolor jaki ma imgCanvas
 
     #setting the header image
-    img[0:125, 0:1280] = header
+    img[0:int(cap_height/5), 0:1280] = header
     #img = cv2.addWeighted(img, 0.5, imgCanvas, 0.5, 0.7)
     cv2.imshow("Painter", img)
     cv2.waitKey(1)
